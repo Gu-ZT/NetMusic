@@ -57,15 +57,14 @@ public class Mp3AudioStream implements AudioStream {
     public ByteBuffer read(int size) throws IOException {
         // 创建指定大小的ByteBuffer
         ByteBuffer byteBuffer = BufferUtils.createByteBuffer(size);
-        int bytesRead = 0;
-        int count = this.stream.read(frame);
+        int bytesRead = 0, count = 0;
         // 循环读取数据直到达到指定大小或输入流结束
-        while (count != -1 && (bytesRead += frameSize) < size) {
-            // 将读取的数据写入ByteBuffer
-            byteBuffer.put(frame);
-            // 继续读取下一部分数据
+        do {
+            // 读取下一部分数据
             count = this.stream.read(frame);
-        }
+            // 将读取的数据写入ByteBuffer
+            if (count != -1) byteBuffer.put(frame);
+        } while (count != -1 && (bytesRead += frameSize) < size);
         // 翻转ByteBuffer，准备进行读取操作
         byteBuffer.flip();
         // 返回包含读取数据的ByteBuffer
