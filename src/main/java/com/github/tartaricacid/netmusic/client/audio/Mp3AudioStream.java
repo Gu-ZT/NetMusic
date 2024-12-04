@@ -19,8 +19,8 @@ import java.nio.ByteBuffer;
  */
 public class Mp3AudioStream implements AudioStream {
     private final AudioInputStream stream;
-    private final byte[] array;
-    private int offset;
+    private final int frameSize;
+    private final byte[] frame;
 
     public Mp3AudioStream(URL url) throws UnsupportedAudioFileException, IOException {
         AudioInputStream originalInputStream = new MpegAudioFileReader().getAudioInputStream(url);
@@ -35,8 +35,8 @@ public class Mp3AudioStream implements AudioStream {
         } else {
             this.stream = targetInputStream;
         }
-        this.array = IOUtils.toByteArray(stream);
-        this.offset = 0;
+        this.frameSize = stream.getFormat().getFrameSize();
+        frame = new byte[frameSize];
     }
 
     @Override
@@ -44,16 +44,32 @@ public class Mp3AudioStream implements AudioStream {
         return stream.getFormat();
     }
 
+    /**
+     * 从流中读取音频数据，并返回一个最多包含指定字节数的字节缓冲区。
+     * 该方法从流中读取音频帧并将其添加到输出缓冲区，直到缓冲区至少
+     * 包含指定数量的字节或到达流的末尾。
+     *
+     * @param size 要读取的最大字节数
+     * @return 字节缓冲区，最多包含要读取的指定字节数
+     * @throws IOException 如果在读取音频数据时发生I/O错误
+     */
     @Override
-    public ByteBuffer read(int size) {
+    public ByteBuffer read(int size) throws IOException {
+        // 创建指定大小的ByteBuffer
         ByteBuffer byteBuffer = BufferUtils.createByteBuffer(size);
-        if (array.length >= offset + size) {
-            byteBuffer.put(array, offset, size);
-        } else {
-            byteBuffer.put(new byte[size]);
-        }
-        offset += size;
+        int bytesRead = 0, count = 0;
+        // 循环读取数据直到达到指定大小或输入流结束
+        do {
+            // 读取下一部分数据
+            count = this.stream.read(frame);
+            // 将读取的数据写入ByteBuffer
+            if (count != -1) {
+                byteBuffer.put(frame);
+            }
+        } while (count != -1 && (bytesRead += frameSize) < size);
+        // 翻转ByteBuffer，准备进行读取操作
         byteBuffer.flip();
+        // 返回包含读取数据的ByteBuffer
         return byteBuffer;
     }
 

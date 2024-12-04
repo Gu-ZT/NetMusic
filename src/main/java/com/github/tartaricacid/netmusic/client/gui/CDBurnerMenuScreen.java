@@ -20,6 +20,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import org.anti_ad.mc.ipn.api.IPNIgnore;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -102,6 +103,10 @@ public class CDBurnerMenuScreen extends AbstractContainerScreen<CDBurnerMenu> {
             long id = Long.parseLong(textField.getValue());
             try {
                 ItemMusicCD.SongInfo song = MusicListManage.get163Song(id);
+                if (StringUtils.isBlank(song.songUrl) || StringUtils.isBlank(song.songName)) {
+                    this.tips = Component.translatable("gui.netmusic.cd_burner.get_info_error");
+                    return;
+                }
                 song.readOnly = this.readOnlyButton.selected();
                 NetworkHandler.CHANNEL.sendToServer(new SetMusicIDMessage(song));
             } catch (Exception e) {
