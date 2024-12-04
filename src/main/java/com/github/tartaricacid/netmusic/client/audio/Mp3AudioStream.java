@@ -21,16 +21,15 @@ public class Mp3AudioStream implements AudioStream {
     private final int frameSize;
     private final byte[] frame;
 
-
     public Mp3AudioStream(URL url) throws UnsupportedAudioFileException, IOException {
         AudioInputStream originalInputStream = new MpegAudioFileReader().getAudioInputStream(url);
         AudioFormat originalFormat = originalInputStream.getFormat();
         AudioFormat targetFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, originalFormat.getSampleRate(), 16,
-            originalFormat.getChannels(), originalFormat.getChannels() * 2, originalFormat.getSampleRate(), false);
+                originalFormat.getChannels(), originalFormat.getChannels() * 2, originalFormat.getSampleRate(), false);
         AudioInputStream targetInputStream = AudioSystem.getAudioInputStream(targetFormat, originalInputStream);
         if (GeneralConfig.ENABLE_STEREO.get()) {
             targetFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, originalFormat.getSampleRate(), 16,
-                1, 2, originalFormat.getSampleRate(), false);
+                    1, 2, originalFormat.getSampleRate(), false);
             this.stream = AudioSystem.getAudioInputStream(targetFormat, targetInputStream);
         } else {
             this.stream = targetInputStream;
@@ -63,7 +62,9 @@ public class Mp3AudioStream implements AudioStream {
             // 读取下一部分数据
             count = this.stream.read(frame);
             // 将读取的数据写入ByteBuffer
-            if (count != -1) byteBuffer.put(frame);
+            if (count != -1) {
+                byteBuffer.put(frame);
+            }
         } while (count != -1 && (bytesRead += frameSize) < size);
         // 翻转ByteBuffer，准备进行读取操作
         byteBuffer.flip();
