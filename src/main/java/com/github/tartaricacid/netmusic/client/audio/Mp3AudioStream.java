@@ -18,7 +18,9 @@ import java.nio.ByteBuffer;
  */
 public class Mp3AudioStream implements AudioStream {
     private final AudioInputStream stream;
-    private boolean end = false;
+    private final int frameSize;
+    private final byte[] frame;
+
 
     public Mp3AudioStream(URL url) throws UnsupportedAudioFileException, IOException {
         AudioInputStream originalInputStream = new MpegAudioFileReader().getAudioInputStream(url);
@@ -33,6 +35,8 @@ public class Mp3AudioStream implements AudioStream {
         } else {
             this.stream = targetInputStream;
         }
+        this.frameSize = stream.getFormat().getFrameSize();
+        frame = new byte[frameSize];
     }
 
     @Override
@@ -43,22 +47,12 @@ public class Mp3AudioStream implements AudioStream {
     @Override
     public ByteBuffer read(int size) throws IOException {
         ByteBuffer byteBuffer = BufferUtils.createByteBuffer(size);
-        byte[] array = new byte[size];
-        int readSize = 0;
-        if (!this.end) {
-            while (readSize < size) {
-                byte[] temp = new byte[4096];
-                int read = this.stream.read(temp, 0, Math.min(4096, size - readSize));
-                System.arraycopy(temp, 0, array, readSize, Math.min(read, size - readSize));
-                readSize += read;
-                if (readSize >= size) break;
-                if (read == 0) {
-                    this.end = true;
-                    break;
-                }
-            }
+        int bytesRead = 0;
+        int count = this.stream.read(frame);
+        while (count != -1 && (bytesRead += frameSize) < size) {
+            byteBuffer.put(frame);
+            count = this.stream.read(frame);
         }
-        byteBuffer.put(array);
         byteBuffer.flip();
         return byteBuffer;
     }
