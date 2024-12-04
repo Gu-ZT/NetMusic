@@ -3,7 +3,6 @@ package com.github.tartaricacid.netmusic.client.audio;
 import com.github.tartaricacid.netmusic.config.GeneralConfig;
 import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader;
 import net.minecraft.client.sounds.AudioStream;
-import org.apache.commons.compress.utils.IOUtils;
 import org.lwjgl.BufferUtils;
 
 import javax.sound.sampled.AudioFormat;
@@ -19,24 +18,21 @@ import java.nio.ByteBuffer;
  */
 public class Mp3AudioStream implements AudioStream {
     private final AudioInputStream stream;
-    private final byte[] array;
-    private int offset;
+    private boolean end = false;
 
     public Mp3AudioStream(URL url) throws UnsupportedAudioFileException, IOException {
         AudioInputStream originalInputStream = new MpegAudioFileReader().getAudioInputStream(url);
         AudioFormat originalFormat = originalInputStream.getFormat();
         AudioFormat targetFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, originalFormat.getSampleRate(), 16,
-                originalFormat.getChannels(), originalFormat.getChannels() * 2, originalFormat.getSampleRate(), false);
+            originalFormat.getChannels(), originalFormat.getChannels() * 2, originalFormat.getSampleRate(), false);
         AudioInputStream targetInputStream = AudioSystem.getAudioInputStream(targetFormat, originalInputStream);
         if (GeneralConfig.ENABLE_STEREO.get()) {
             targetFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, originalFormat.getSampleRate(), 16,
-                    1, 2, originalFormat.getSampleRate(), false);
+                1, 2, originalFormat.getSampleRate(), false);
             this.stream = AudioSystem.getAudioInputStream(targetFormat, targetInputStream);
         } else {
             this.stream = targetInputStream;
         }
-        this.array = IOUtils.toByteArray(stream);
-        this.offset = 0;
     }
 
     @Override
@@ -45,14 +41,24 @@ public class Mp3AudioStream implements AudioStream {
     }
 
     @Override
-    public ByteBuffer read(int size) {
+    public ByteBuffer read(int size) throws IOException {
         ByteBuffer byteBuffer = BufferUtils.createByteBuffer(size);
-        if (array.length >= offset + size) {
-            byteBuffer.put(array, offset, size);
-        } else {
-            byteBuffer.put(new byte[size]);
+        byte[] array = new byte[size];
+        int readSize = 0;
+        if (!this.end) {
+            while (readSize < size) {
+                byte[] temp = new byte[4096];
+                int read = this.stream.read(temp, 0, Math.min(4096, size - readSize));
+                System.arraycopy(temp, 0, array, readSize, Math.min(read, size - readSize));
+                readSize += read;
+                if (readSize >= size) break;
+                if (read == 0) {
+                    this.end = true;
+                    break;
+                }
+            }
         }
-        offset += size;
+        byteBuffer.put(array);
         byteBuffer.flip();
         return byteBuffer;
     }
