@@ -40,7 +40,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 import javax.annotation.Nullable;
 
 public class BlockMusicPlayer extends HorizontalDirectionalBlock implements EntityBlock {
-    public static final BooleanProperty CYCLE = BooleanProperty.create("cycle");
+    public static final BooleanProperty CYCLE_DISABLE = BooleanProperty.create("cycle_disable");
     public static final IClientBlockExtensions CLIENT_BLOCK_EXTENSIONS = FMLEnvironment.dist == Dist.CLIENT ? new IClientBlockExtensions() {
         @Override
         public boolean addHitEffects(BlockState state, Level world, HitResult target, ParticleEngine manager) {
@@ -106,14 +106,14 @@ public class BlockMusicPlayer extends HorizontalDirectionalBlock implements Enti
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, CYCLE);
+        builder.add(FACING, CYCLE_DISABLE);
     }
 
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction direction = context.getHorizontalDirection().getOpposite();
-        return this.defaultBlockState().setValue(FACING, direction).setValue(CYCLE, false);
+        return this.defaultBlockState().setValue(FACING, direction).setValue(CYCLE_DISABLE, true);
     }
 
     @Override

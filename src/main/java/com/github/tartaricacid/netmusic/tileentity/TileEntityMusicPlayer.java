@@ -23,7 +23,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 import javax.annotation.Nullable;
 
-import static com.github.tartaricacid.netmusic.block.BlockMusicPlayer.CYCLE;
+import static com.github.tartaricacid.netmusic.block.BlockMusicPlayer.CYCLE_DISABLE;
 
 public class TileEntityMusicPlayer extends BlockEntity {
     public static final BlockEntityType<TileEntityMusicPlayer> TYPE = BlockEntityType.Builder.of(TileEntityMusicPlayer::new, InitBlocks.MUSIC_PLAYER.get()).build(null);
@@ -131,7 +131,10 @@ public class TileEntityMusicPlayer extends BlockEntity {
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, TileEntityMusicPlayer te) {
         te.tickTime();
         if (0 < te.getCurrentTime() && te.getCurrentTime() < 16 && te.getCurrentTime() % 5 == 0) {
-            if (blockState.getValue(CYCLE)) {
+            if (blockState.getValue(CYCLE_DISABLE)) {
+                te.setPlay(false);
+                te.markDirty();
+            } else {
                 ItemStack stackInSlot = te.getPlayerInv().getStackInSlot(0);
                 if (stackInSlot.isEmpty()) {
                     return;
@@ -140,9 +143,6 @@ public class TileEntityMusicPlayer extends BlockEntity {
                 if (songInfo != null) {
                     te.setPlayToClient(songInfo);
                 }
-            } else {
-                te.setPlay(false);
-                te.markDirty();
             }
         }
     }
